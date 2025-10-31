@@ -1,9 +1,9 @@
 [package]
 name = "fps-cli"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
+anyhow = "1.0.100"
+clap = {version = "4.5.51", features = ["derive"]}
 fps-core = { path = "../fps-core" }
-clap = { version = "4.0", features = ["derive"] }
-anyhow = "1.0"
