@@ -3,5 +3,17 @@
 version = 4
 
 [[package]]
+name = "fps-cli"
+version = "0.1.0"
+
+[[package]]
+name = "fps-core"
+version = "0.1.0"
+
+[[package]]
 name = "fps-project"
+version = "0.1.0"
+
+[[package]]
+name = "fps-web"
 version = "0.1.0"

@@ -1,0 +1,8 @@
+[package]
+name = "fps-core"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+fps-core = { path = "../fps-core" }
