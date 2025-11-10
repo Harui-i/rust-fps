@@ -1,3 +1,4 @@
+use num_bigint::BigInt;
 use num_rational::BigRational;
 use num_traits::{One, Signed, Zero};
 use std::fmt;
@@ -93,6 +94,14 @@ impl Series {
         result
     }
 
+    pub fn scale(&self, scalar: &BigRational) -> Series {
+        let mut result = self.clone();
+        for coeff in &mut result.coeffs {
+            *coeff *= scalar.clone();
+        }
+        result
+    }
+
     pub fn inverse(&self) -> Result<Series, EvalError> {
         let max_degree = self.max_degree();
         let a0 = self.constant_term();
@@ -143,6 +152,88 @@ impl Series {
             if exp > 0 {
                 base = base.mul(&base);
             }
+        }
+
+        Ok(result)
+    }
+
+    pub fn sin(&self) -> Result<Series, EvalError> {
+        if !self.constant_term().is_zero() {
+            return Err(EvalError::FunctionRequiresZeroConstant("sin"));
+        }
+
+        let max_degree = self.max_degree();
+        let mut result = Series::zero(max_degree);
+
+        if max_degree == 0 {
+            return Ok(result);
+        }
+
+        let mut factorial = BigInt::one();
+        for n in 0..=((max_degree - 1) / 2) {
+            if n > 0 {
+                let two_n = 2 * (n as i64);
+                factorial *= BigInt::from(two_n);
+                factorial *= BigInt::from(two_n + 1);
+            }
+
+            let power = self.powi((2 * n + 1) as i64)?;
+            let sign = if n % 2 == 0 {
+                BigInt::one()
+            } else {
+                -BigInt::one()
+            };
+            let coeff = BigRational::new(sign, factorial.clone());
+            result = result.add(&power.scale(&coeff));
+        }
+
+        Ok(result)
+    }
+
+    pub fn exp(&self) -> Result<Series, EvalError> {
+        if !self.constant_term().is_zero() {
+            return Err(EvalError::FunctionRequiresZeroConstant("exp"));
+        }
+
+        let max_degree = self.max_degree();
+        let mut result = Series::zero(max_degree);
+        let mut factorial = BigInt::one();
+
+        for n in 0..=max_degree {
+            if n > 0 {
+                factorial *= BigInt::from(n as i64);
+            }
+            let power = self.powi(n as i64)?;
+            let coeff = BigRational::new(BigInt::one(), factorial.clone());
+            result = result.add(&power.scale(&coeff));
+        }
+
+        Ok(result)
+    }
+
+    pub fn log(&self) -> Result<Series, EvalError> {
+        if self.constant_term() != BigRational::one() {
+            return Err(EvalError::LogRequiresUnitConstant);
+        }
+
+        let max_degree = self.max_degree();
+        let mut result = Series::zero(max_degree);
+
+        if max_degree == 0 {
+            return Ok(result);
+        }
+
+        let adjustment = self.sub(&Series::one(max_degree));
+
+        for n in 1..=max_degree {
+            let power = adjustment.powi(n as i64)?;
+            let sign = if n % 2 == 1 {
+                BigInt::one()
+            } else {
+                -BigInt::one()
+            };
+            let coeff = BigRational::new(sign, BigInt::from(n as i64));
+            result = result.add(&power.scale(&coeff));
         }
 
         Ok(result)
