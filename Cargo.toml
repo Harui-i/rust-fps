@@ -11,3 +11,6 @@ members = [
 ]
 
 [dependencies]
+
+[dev-dependencies]
+fps-core = { path = "fps-core" }
