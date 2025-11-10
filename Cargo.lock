@@ -124,12 +124,16 @@ name = "fps-core"
 version = "0.1.0"
 dependencies = [
  "num-rational",
+ "num-traits",
  "thiserror",
 ]
 
 [[package]]
 name = "fps-project"
 version = "0.1.0"
+dependencies = [
+ "fps-core",
+]
 
 [[package]]
 name = "fps-web"
