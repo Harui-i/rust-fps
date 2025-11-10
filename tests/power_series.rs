@@ -12,3 +12,21 @@ fn geometric_series_matches_expected_output() {
     let formatted = evaluate("1 / (1 - x)", 3);
     assert_eq!(formatted, "1 + x + x^2 + x^3 + O(x^4)");
 }
+
+#[test]
+fn sin_series_matches_expected_output() {
+    let formatted = evaluate("sin(3x)", 3);
+    assert_eq!(formatted, "3 x - 9/2 x^3 + O(x^4)");
+}
+
+#[test]
+fn exp_series_matches_expected_output() {
+    let formatted = evaluate("exp(5x)", 3);
+    assert_eq!(formatted, "1 + 5 x + 25/2 x^2 + 125/6 x^3 + O(x^4)");
+}
+
+#[test]
+fn log_series_matches_expected_output() {
+    let formatted = evaluate("log(1 + 7x)", 3);
+    assert_eq!(formatted, "7 x - 49/2 x^2 + 343/3 x^3 + O(x^4)");
+}

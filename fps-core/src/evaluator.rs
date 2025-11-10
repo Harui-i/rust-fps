@@ -10,6 +10,10 @@ pub enum EvalError {
     NonIntegerExponent,
     #[error("Exponent magnitude is too large")]
     ExponentTooLarge,
+    #[error("{0} requires series with zero constant term")]
+    FunctionRequiresZeroConstant(&'static str),
+    #[error("log requires series with constant term equal to 1")]
+    LogRequiresUnitConstant,
 }
 
 pub fn evaluate(expr: &Expr, max_degree: usize) -> Result<Series, EvalError> {
@@ -59,6 +63,18 @@ pub fn evaluate(expr: &Expr, max_degree: usize) -> Result<Series, EvalError> {
         Expr::Neg(inner) => {
             let series = evaluate(inner, max_degree)?;
             Ok(series.neg())
+        }
+        Expr::Sin(inner) => {
+            let series = evaluate(inner, max_degree)?;
+            series.sin()
+        }
+        Expr::Exp(inner) => {
+            let series = evaluate(inner, max_degree)?;
+            series.exp()
+        }
+        Expr::Log(inner) => {
+            let series = evaluate(inner, max_degree)?;
+            series.log()
         }
     }
 }

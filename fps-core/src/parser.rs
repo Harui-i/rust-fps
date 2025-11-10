@@ -1,4 +1,4 @@
-use crate::tokenizer::Token;
+use crate::tokenizer::{FunctionToken, Token};
 use num_rational::BigRational;
 use thiserror::Error;
 
@@ -12,6 +12,9 @@ pub enum Expr {
     Div(Box<Expr>, Box<Expr>),
     Pow(Box<Expr>, Box<Expr>),
     Neg(Box<Expr>),
+    Sin(Box<Expr>),
+    Exp(Box<Expr>),
+    Log(Box<Expr>),
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]
@@ -48,6 +51,25 @@ impl<'a> Parser<'a> {
         match self.consume() {
             Some(Token::Num(n)) => Ok(Expr::Num(n.clone())),
             Some(Token::Variable(c)) => Ok(Expr::Variable(*c)),
+            Some(Token::Function(func)) => {
+                let func = *func;
+                match self.consume() {
+                    Some(Token::LParen) => {
+                        let expr = self.parse_expr(0)?;
+                        match self.consume() {
+                            Some(Token::RParen) => match func {
+                                FunctionToken::Sin => Ok(Expr::Sin(Box::new(expr))),
+                                FunctionToken::Exp => Ok(Expr::Exp(Box::new(expr))),
+                                FunctionToken::Log => Ok(Expr::Log(Box::new(expr))),
+                            },
+                            Some(t) => Err(ParserError::UnexpectedToken(t.clone())),
+                            None => Err(ParserError::UnexpectedEof),
+                        }
+                    }
+                    Some(t) => Err(ParserError::UnexpectedToken(t.clone())),
+                    None => Err(ParserError::UnexpectedEof),
+                }
+            }
             Some(Token::LParen) => {
                 let expr = self.parse_expr(0)?;
                 match self.consume() {
