@@ -1,21 +1,17 @@
 use yew::prelude::*;
 
-
 // TODO: map_errを使ってキレイに書き直す(FPS計算がフロントエンドで動くようになったら)
 fn calc_fps(expression: &str, max_deg: usize) -> Option<String> {
-
     let tokens = fps_core::tokenizer::tokenize(expression);
 
     if let Err(e) = tokens {
-        //eprintln!("Tokenization error: {:?}", e);
         web_sys::console::log_1(&format!("Tokenization error: {:?}", e).into());
         return None;
     }
-    let tokens: Vec<fps_core::tokenizer::Token>  = tokens.unwrap();
+    let tokens: Vec<fps_core::tokenizer::Token> = tokens.unwrap();
     let expr = fps_core::parser::parse(&tokens);
 
     if let Err(e) = expr {
-        //eprintln!("Parsing error: {:?}", e);
         web_sys::console::log_1(&format!("Parsing error: {:?}", e).into());
         return None;
     }
@@ -24,57 +20,140 @@ fn calc_fps(expression: &str, max_deg: usize) -> Option<String> {
     let series = fps_core::evaluator::evaluate(&expr, max_deg);
 
     if let Err(e) = series {
-        //eprintln!("Evaluation error: {:?}", e);
         web_sys::console::log_1(&format!("Evaluation error: {:?}", e).into());
         return None;
     }
     let series = series.unwrap();
 
-    return Some(format!("{}", series));
-
+    Some(format!("{}", series))
 }
 
 #[function_component]
 fn App() -> Html {
     let expression: UseStateHandle<String> = use_state(|| String::from("1/(1-x)"));
     let max_degree: UseStateHandle<usize> = use_state(|| 5);
-    let result: UseStateHandle<String> = use_state(|| String::new());
+    let result: UseStateHandle<String> = use_state(String::new);
 
+    {
+        let result = result.clone();
+        use_effect_with(
+            ((*expression).clone(), *max_degree),
+            move |(expr_value, deg_value): &(String, usize)| {
+                let computed = calc_fps(expr_value, *deg_value)
+                    .unwrap_or_else(|| "Unable to evaluate expression".to_string());
+                result.set(computed);
+                || ()
+            },
+        );
+    }
 
-    // 入力欄をバインド(バインドってどういうことだよ)
-    // 「入力欄をバインドする」というのは、UIコンポーネントと状態(State)を双方向でつないで、入力内容とアプリ内部の値が常に一致するようにすること。
-    // YewはReactと同じ単方向データフローなので(といってもReactを知らないのでわからないが)、
-    // 状態→inputの valueと inputからのイベント→状態更新の2本を書けばバインディング完了
-    use web_sys::HtmlInputElement; // web-sysは、WebAssemblyでブラウザ向けに書くときDOMやWindowなどのブラウザのWebAPIをRustから型型安に操作するためのバインディング集(codex談)
+    use web_sys::HtmlInputElement;
 
-    // 入力が変わったときに新しい文字列をstateに入れるコールバック
     let on_expr_change: Callback<InputEvent> = {
-        let expression: UseStateHandle<String> = expression.clone();
-        let result: UseStateHandle<String> = result.clone();
+        let expression = expression.clone();
         Callback::from(move |event: InputEvent| {
             let input: HtmlInputElement = event.target_unchecked_into::<HtmlInputElement>();
             expression.set(input.value());
-            // console.logと同じ感じ(たぶん)
             web_sys::console::log_1(&format!("Expression changed: {}", input.value()).into());
-
-            let res: Option<String> = calc_fps(&input.value(), *max_degree);
-            let res: String = res.unwrap_or("error".to_string());
-            result.set(res);
-            web_sys::console::log_1(&format!("Calculation result: {:?}", result).into());
         })
     };
 
+    let on_degree_change: Callback<InputEvent> = {
+        let max_degree = max_degree.clone();
+        Callback::from(move |event: InputEvent| {
+            let input: HtmlInputElement = event.target_unchecked_into::<HtmlInputElement>();
+            let parsed = input.value().parse::<usize>().unwrap_or(1).clamp(1, 32);
+            max_degree.set(parsed);
+            web_sys::console::log_1(&format!("Max degree changed: {}", parsed).into());
+        })
+    };
+
+    let preset_expressions = vec![
+        ("Geometric Series", "1/(1-x)"),
+        ("Exponential", "exp(x)"),
+        ("Sine", "sin(x)"),
+        ("Cosine", "cos(x)"),
+        ("Logarithm", "log(1+x)"),
+    ];
+
+    let preset_buttons = preset_expressions.into_iter().map(|(label, value)| {
+        let expression = expression.clone();
+        let value_string = value.to_string();
+        let label_text = label.to_string();
+        html! {
+            <button class="preset-chip" type="button" onclick={{
+                let expression = expression.clone();
+                let value_string = value_string.clone();
+                Callback::from(move |_| {
+                    expression.set(value_string.clone());
+                })
+            }}>
+                <span class="preset-label">{ label_text }</span>
+                <span class="preset-value">{ value }</span>
+            </button>
+        }
+    });
 
     html! {
-        <>
-        <input value={(*expression).clone()} oninput={on_expr_change} />
+        <div class="app-shell">
+            <main class="glass-card">
+                <header class="hero">
+                    <p class="eyebrow">{"FPS Explorer"}</p>
+                    <h1>{"Formal Power Series Playground"}</h1>
+                    <p class="hero-copy">
+                        {"Experiment with expressions, tweak truncation degrees, and inspect the resulting series with snappy WASM-backed evaluation."}
+                    </p>
+                </header>
 
-        // 計算結果
-        {
-            html! { <pre>{(*result).clone()}</pre> }
+                <section class="control-panel">
+                    <div class="field">
+                        <label for="expression">{"Expression"}</label>
+                        <div class="input-wrapper">
+                            <input
+                                id="expression"
+                                class="text-input"
+                                value={(*expression).clone()}
+                                oninput={on_expr_change.clone()}
+                                placeholder="e.g. 1/(1-x)"
+                            />
+                        </div>
+                        <p class="hint">{"Supports +, -, *, /, sin, cos, exp, log, and custom fps_core functions."}</p>
+                    </div>
 
-        }
-        </>
+                    <div class="field">
+                        <label for="max-degree">{"Max degree"}</label>
+                        <div class="input-wrapper number">
+                            <input
+                                id="max-degree"
+                                class="text-input"
+                                type="number"
+                                min="1"
+                                max="32"
+                                value={(*max_degree).to_string()}
+                                oninput={on_degree_change.clone()}
+                            />
+                            <span class="suffix">{"deg"}</span>
+                        </div>
+                        <p class="hint">{"Clamp stays between 1 and 32 to keep evaluation responsive."}</p>
+                    </div>
+                </section>
+
+                <section class="preset-panel">
+                    <p class="hint">{"Need inspiration? Try a preset expression:"}</p>
+                    <div class="preset-grid">
+                        { for preset_buttons }
+                    </div>
+                </section>
+
+                <section class="result-panel">
+                    <div class="result-header">
+                        <h2>{"Series output"}</h2>
+                        <span class="status-pill">{format!("deg ≤ {}", *max_degree)}</span>
+                    </div>
+                    <pre class="result-block">{(*result).clone()}</pre>
+                </section>
+            </main>
+        </div>
     }
 }
 
