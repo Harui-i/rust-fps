@@ -198,6 +198,8 @@ dependencies = [
 name = "fps-web"
 version = "0.1.0"
 dependencies = [
+ "fps-core",
+ "web-sys",
  "yew",
 ]
 
