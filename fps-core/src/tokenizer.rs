@@ -4,6 +4,7 @@ use thiserror::Error;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FunctionToken {
     Sin,
+    Cos,
     Exp,
     Log,
 }
@@ -62,6 +63,7 @@ pub fn tokenize(input: &str) -> Result<Vec<Token>, TokenizerError> {
                 let token = match ident.as_str() {
                     "x" => Token::Variable('x'),
                     "sin" => Token::Function(FunctionToken::Sin),
+                    "cos" => Token::Function(FunctionToken::Cos),
                     "exp" => Token::Function(FunctionToken::Exp),
                     "log" => Token::Function(FunctionToken::Log),
                     _ => return Err(TokenizerError::UnexpectedIdentifier(ident)),

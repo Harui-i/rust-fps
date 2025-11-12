@@ -13,6 +13,7 @@ pub enum Expr {
     Pow(Box<Expr>, Box<Expr>),
     Neg(Box<Expr>),
     Sin(Box<Expr>),
+    Cos(Box<Expr>),
     Exp(Box<Expr>),
     Log(Box<Expr>),
 }
@@ -59,6 +60,7 @@ impl<'a> Parser<'a> {
                         match self.consume() {
                             Some(Token::RParen) => match func {
                                 FunctionToken::Sin => Ok(Expr::Sin(Box::new(expr))),
+                                FunctionToken::Cos => Ok(Expr::Cos(Box::new(expr))),
                                 FunctionToken::Exp => Ok(Expr::Exp(Box::new(expr))),
                                 FunctionToken::Log => Ok(Expr::Log(Box::new(expr))),
                             },

@@ -20,6 +20,12 @@ fn sin_series_matches_expected_output() {
 }
 
 #[test]
+fn cos_series_matches_expected_output() {
+    let formatted = evaluate("cos(5x)", 4);
+    assert_eq!(formatted, "1 - 25/2 x^2 + 625/24 x^4 + O(x^5)");
+}
+
+#[test]
 fn exp_series_matches_expected_output() {
     let formatted = evaluate("exp(5x)", 3);
     assert_eq!(formatted, "1 + 5 x + 25/2 x^2 + 125/6 x^3 + O(x^4)");
