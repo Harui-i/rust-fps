@@ -190,6 +190,44 @@ impl Series {
         Ok(result)
     }
 
+    pub fn cos(&self) -> Result<Series, EvalError> {
+        if !self.constant_term().is_zero() {
+            return Err(EvalError::FunctionRequiresZeroConstant("cos"));
+        }
+
+        let max_degree = self.max_degree();
+        let mut result = Series::zero(max_degree);
+
+        if max_degree == 0 {
+            result.coeffs[0] = BigRational::one();
+            return Ok(result);
+        }
+
+        let mut factorial = BigInt::one();
+        for n in 0..=(max_degree / 2) {
+            if n > 0 {
+                let two_n = 2 * (n as i64);
+                factorial *= BigInt::from(two_n - 1);
+                factorial *= BigInt::from(two_n);
+            }
+
+            let power = if n == 0 {
+                Series::one(max_degree)
+            } else {
+                self.powi((2 * n) as i64)?
+            };
+            let sign = if n % 2 == 0 {
+                BigInt::one()
+            } else {
+                -BigInt::one()
+            };
+            let coeff = BigRational::new(sign, factorial.clone());
+            result = result.add(&power.scale(&coeff));
+        }
+
+        Ok(result)
+    }
+
     pub fn exp(&self) -> Result<Series, EvalError> {
         if !self.constant_term().is_zero() {
             return Err(EvalError::FunctionRequiresZeroConstant("exp"));

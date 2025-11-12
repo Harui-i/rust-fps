@@ -68,6 +68,10 @@ pub fn evaluate(expr: &Expr, max_degree: usize) -> Result<Series, EvalError> {
             let series = evaluate(inner, max_degree)?;
             series.sin()
         }
+        Expr::Cos(inner) => {
+            let series = evaluate(inner, max_degree)?;
+            series.cos()
+        }
         Expr::Exp(inner) => {
             let series = evaluate(inner, max_degree)?;
             series.exp()
